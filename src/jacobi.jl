@@ -7,6 +7,8 @@ import SHIPs: eval_basis,
               alloc_B,
               alloc_dB
 
+import JuLIP: alloc_temp, alloc_temp_d
+
 import Base.==
 export Jacobi
 
@@ -70,45 +72,63 @@ end
 
 Base.length(J::Jacobi) = maxdegree(J) + 1
 maxdegree(J::Jacobi) = length(J.A)
-alloc_B(J::Jacobi{T}) where {T} = zeros(T, length(J))
-alloc_dB(J::Jacobi{T}, args...) where {T} = zeros(T, length(J))
+alloc_B(J::Jacobi{T}, x::AbstractVector) where {T} =
+      zeros(T, length(x), length(J))
+alloc_dB(J::Jacobi{T}, x::AbstractVector) where {T} =
+      zeros(T, length(x), length(J))
 
-function eval_basis!(P::AbstractVector, J::Jacobi, x, _)
-   N = maxdegree(J) #::Integer = length(P)-1
-   @assert length(P) >= N+1
-   @assert 2 <= N <= maxdegree(J)
+
+function eval_basis!(P::AbstractMatrix, tmp, J::Jacobi, x::AbstractVector)
+   N = maxdegree(J)
+   @assert size(P, 2) >= N+1
+   @assert size(P, 1) >= length(x)
+   @assert N >= 2
    α, β = J.α, J.β
    @inbounds begin
-      P[1] = 1
-      P[2] = (α+1) + 0.5 * (α+β+2) * (x-1)
+      for j = 1:length(x)
+         P[j, 1] = 1
+         P[j, 2] = (α+1) + 0.5 * (α+β+2) * (x[j]-1)
+      end
       for n = 2:N
-         P[n+1] = (J.A[n] * x + J.B[n]) * P[n] + J.C[n] * P[n-1]
+         A, B, C = J.A[n], J.B[n], J.C[n]
+         for j = 1:length(x)
+            P[j, n+1] = (A * x[j] + B) * P[j, n] + C * P[j, n-1]
+         end
       end
    end
    return P
 end
 
+# # mostly for testing and debugging
+# eval_basis(J::Jacobi, x::Number) =
+#       eval_basis!(zeros(1, maxdegree(J)+1), J, [x], nothing)[:]
 
-function eval_basis_d!(P::AbstractVector, dP::AbstractVector,
-                    J::Jacobi, x::Number, _)
-   N = maxdegree(J) #::Integer = length(P)-1
+
+function eval_basis_d!(P::AbstractMatrix, dP::AbstractMatrix, tmp,
+                       J::Jacobi, x::AbstractVector)
+   N = maxdegree(J)
    @assert length(P) >= N+1
    @assert length(dP) >= N+1
-   @assert 2 <= N <= maxdegree(J)
+   @assert N >= 2
    α, β = J.α, J.β
    @inbounds begin
-      P[1] = 1
-      dP[1] = 0
-      P[2] = (α+1) + 0.5 * (α+β+2) * (x-1)
-      dP[2] = 0.5 * (α+β+2)
-      for n = 2:N
-         c1 = J.A[n] * x + J.B[n]
-         c2 = J.C[n]
-         P[n+1] = c1 * P[n] + c2 * P[n-1]
-         dP[n+1] = J.A[n] * P[n] + c1 * dP[n] + J.C[n] * dP[n-1]
+      for j = 1:length(x)
+         P[j, 1] = 1
+         dP[j, 1] = 0
+         P[j, 2] = (α+1) + 0.5 * (α+β+2) * (x[j]-1)
+         dP[j, 2] = 0.5 * (α+β+2)
       end
-   end # @inbounds
+      for n = 2:N
+         A, B, C = J.A[n], J.B[n], J.C[n]
+         for j = 1:length(x)
+            c1 = A * x[j] + B
+            P[j, n+1] = c1 * P[j, n] + C * P[j, n-1]
+            dP[j, n+1] = A * P[j, n] + c1 * dP[j, n] + C * dP[j, n-1]
+         end
+      end
+   end
    # return P, dP
+   return nothing
 end
 
 

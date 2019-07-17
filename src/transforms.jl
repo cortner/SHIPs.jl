@@ -148,31 +148,30 @@ transform_d(J::TransformedJacobi, r) = transform_d(J.trans, r)
 fcut(J::TransformedJacobi, r) = fcut(J.mult, r)
 fcut_d(J::TransformedJacobi, r) = fcut_d(J.mult, r)
 
-SHIPs.alloc_B( J::TransformedJacobi{T}) where {T} = Vector{T}(undef, length(J.J))
-SHIPs.alloc_dB(J::TransformedJacobi{T}, args...) where {T} = Vector{T}(undef, length(J.J))
+SHIPs.alloc_B( J::TransformedJacobi{T}, N::Integer) where {T} =
+      Matrix{T}(undef, N, length(J.J))
+SHIPs.alloc_dB(J::TransformedJacobi{T}, N::Integer) where {T} =
+      Matrix{T}(undef, N, length(J.J))
 
-function eval_basis!(P, J::TransformedJacobi, r, _)
+function eval_basis!(P, tmp, J::TransformedJacobi, r::AbstractVector, _)
    N = length(J)-1
+   x = tmp.x
+   fc = tmp.fc
    @assert length(P) >= N+1
-   # apply the cutoff
-   if !(J.rl < r < J.ru)
-      fill!(P, 0.0)
-      return P
-   end
    # transform coordinates
-   t = transform(J.trans, r)
-   x = -1 + 2 * (t - J.tl) / (J.tu-J.tl)
+   for n = 1:length(r)
+      t = transform(J.trans, r[n])
+      x[n] = -1 + 2 * (t - J.tl) / (J.tu-J.tl)
+      fc[n] = fcut(J, x[n])
+   end
    # evaluate the actual Jacobi polynomials
    eval_basis!(P, J.J, x, N)
    # apply the cutoff multiplier
-   fc = fcut(J, x)
-   for n = 1:N+1
-      @inbounds P[n] *= fc
-   end
+   lmul!(Diagonal(fc), P)
    return P
 end
 
-function eval_basis_d!(P, dP, J::TransformedJacobi, r, _)
+function eval_basis_d!(P, dP, J::TransformedJacobi, r::Number, _)
    N = length(J)-1
    @assert length(P) >= N+1
    # apply the cutoff

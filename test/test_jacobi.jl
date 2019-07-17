@@ -2,7 +2,7 @@
 @testset "Jacobi" begin
 
 using SHIPs, Test
-
+using JuLIP.Testing
 using SHIPs.JacobiPolys: Jacobi
 using SHIPs: eval_basis, eval_basis_d
 
@@ -40,19 +40,30 @@ end
 djacobi(x, n, a, b) =  one(x)/2 * (a + b + n + 1) * jacobi(x, n-1, a+1, b+1)
 
 @info("--------------  JACOBI TESTS ---------------")
-@info("testing jacobi implementation against reference.") 
-for ntest = 1:30
-   x = 2*rand() - 1
+@info("testing jacobi implementation against reference.")
+Nx = 5
+N = 30
+for ntest = 1:10
+   x = 2*rand(Nx) .- 1
    α, β = rand(), rand()
-   N = 30
    P = eval_basis(Jacobi(α, β, N), x)
-   P1, dP = eval_basis_d(Jacobi(α, β, N), x)
-   Ptest = [ jacobi(x, n, α, β) for n = 0:N ]
-   dPtest = [ djacobi(x, n, α, β) for n = 0:N ]
-   print_tf((@test P ≈ P1 ≈ Ptest))
-   print_tf((@test dP ≈ dPtest))
+   # P1, dP = eval_basis_d(Jacobi(α, β, N), x)
+   Ptest = [ jacobi(x[j], n, α, β) for j=1:Nx, n = 0:N ]
+   # dPtest = [ djacobi(x, n, α, β) for n = 0:N ]
+   print_tf((@test P ≈ Ptest))
+   # print_tf((@test dP ≈ dPtest))
 end
 println()
 
 
 end
+
+x = 2*rand(Nx) .- 1
+α, β = rand(), rand()
+N = 30
+P = eval_basis(Jacobi(α, β, N), x)
+P1, dP = eval_basis_d(Jacobi(α, β, N), x)
+Ptest = [ jacobi(x[j], n, α, β) for j = 1:Nx, n = 0:N ]
+dPtest = [ djacobi(x[j], n, α, β) for j = 1:Nx, n = 0:N ]
+print_tf((@test P ≈ P1 ≈ Ptest))
+print_tf((@test dP ≈ dPtest))

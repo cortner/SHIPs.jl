@@ -18,7 +18,6 @@ Rs = randR(Nat)
 btmp = SHIPs.alloc_temp(BB[1])
 @info("profile precomputation of A")
 @btime SHIPs.precompute_A!($btmp, $(BB[1]), $Rs)
-# @btime SHIPs.precompute_A!($(BB[1]), $Rs, $btmp)
 
 @info("profile basis and ship computation")
 for n = 2:4
