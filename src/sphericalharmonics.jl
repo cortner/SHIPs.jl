@@ -374,11 +374,19 @@ SHBasis(maxL::Integer, T=Float64) =
 Base.eltype(SH::SHBasis{T}) where {T} = T
 Base.length(S::SHBasis) = sizeY(S.maxL)
 
-alloc_B( S::SHBasis{T}) where {T} =
-		Vector{Complex{T}}(undef, length(S))
+alloc_B( S::SHBasis, x::JVec) =
+		alloc_B(S, 1)[:]
+alloc_B( S::SHBasis, x::AbstractVector{<: JVec}) =
+		alloc_B(S, length(x))
+alloc_B( S::SHBasis{T}, N::Integer) where {T} =
+		Matrix{Complex{T}}(undef, N, length(S))
 
-alloc_dB(S::SHBasis{T}, args...) where {T} =
-		Vector{JVec{Complex{T}}}(undef, length(S))
+alloc_dB( S::SHBasis, x::JVec) =
+		alloc_dB(S, 1)[:]
+alloc_dB( S::SHBasis, x::AbstractVector{<:JVec}) =
+		alloc_dB(S, length(x))
+alloc_dB(S::SHBasis{T}, N::Integer) where {T} =
+		Matrix{JVec{Complex{T}}}(undef, N, length(S))
 
 alloc_temp(SH::SHBasis{T}, args...) where {T} = (
 		P = Vector{T}(undef, sizeP(SH.maxL)), )
@@ -388,7 +396,7 @@ alloc_temp_d(SH::SHBasis{T}, args...) where {T} = (
 		dP = Vector{T}(undef, sizeP(SH.maxL)) )
 
 
-function eval_basis!(Y, SH::SHBasis, R::JVec, tmp)
+function eval_basis!(Y, tmp, SH::SHBasis, R::JVec)
 	L=SH.maxL
 	@assert 0 <= L <= SH.maxL
 	@assert length(Y) >= sizeY(L)
@@ -398,8 +406,15 @@ function eval_basis!(Y, SH::SHBasis, R::JVec, tmp)
 	return Y
 end
 
+function eval_basis!(Y, tmp, SH::SHBasis, R::AbstractVector{<:JVec})
+	for j = 1:length(R)
+		eval_basis!((@view Y[j,:]), tmp, SH, R[j])
+	end
+	return Y
+end
 
-function eval_basis_d!(Y, dY, SH::SHBasis, R::JVec, tmp)
+
+function eval_basis_d!(Y, dY, tmp, SH::SHBasis, R::JVec)
 	L=SH.maxL
 	@assert 0 <= L <= SH.maxL
 	@assert length(Y) >= sizeY(L)
@@ -410,6 +425,14 @@ function eval_basis_d!(Y, dY, SH::SHBasis, R::JVec, tmp)
 	compute_dp!(L, S, SH.coeff, tmp.P, tmp.dP)
 	cYlm_d!(Y, dY, L, S, tmp.P, tmp.dP)
 	# return Y, dY
+	return nothing
+end
+
+function eval_basis_d!(Y, dY, tmp, SH::SHBasis, R::AbstractVector{<:JVec})
+	for j = 1:length(R)
+		eval_basis!((@view Y[j,:]), (@view dY[j,:]), tmp, SH, R[j])
+	end
+	return nothing
 end
 
 

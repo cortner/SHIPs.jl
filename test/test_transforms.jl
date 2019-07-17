@@ -10,7 +10,7 @@ using SHIPs.SphericalHarmonics
 using SHIPs.SphericalHarmonics: dspher_to_dcart, PseudoSpherical,
                cart2spher, spher2cart
 using SHIPs: eval_basis, eval_basis_d
-
+using JuLIP.Testing
 
 
 verbose = false
@@ -25,13 +25,15 @@ for p in 2:4
    for B in [B1, B2]
       B == B1 && @info("basis = 1s")
       B == B2 && @info("basis = 2s")
-      for r in [3 * rand(10); [3.0]]
+      for r in [ [ 3*rand(5) for _=1:10 ]; [ [3.0], [3.0, 3.0-1e-10] ] ]
+         P1 = eval_basis(B, r)
          P, dP = eval_basis_d(B, r)
+         print_tf(@test P1 ≈ P)
          errs = []
          verbose && @printf("     h    |     error  \n")
          for p = 2:10
             h = 0.1^p
-            dPh = (eval_basis(B, r+h) - P) / h
+            dPh = (eval_basis(B, r.+h) - P) / h
             push!(errs, norm(dPh - dP, Inf))
             verbose && @printf(" %.2e | %2e \n", h, errs[end])
          end

@@ -57,13 +57,3 @@ println()
 
 
 end
-
-x = 2*rand(Nx) .- 1
-α, β = rand(), rand()
-N = 30
-P = eval_basis(Jacobi(α, β, N), x)
-P1, dP = eval_basis_d(Jacobi(α, β, N), x)
-Ptest = [ jacobi(x[j], n, α, β) for j = 1:Nx, n = 0:N ]
-dPtest = [ djacobi(x[j], n, α, β) for j = 1:Nx, n = 0:N ]
-print_tf((@test P ≈ P1 ≈ Ptest))
-print_tf((@test dP ≈ dPtest))
