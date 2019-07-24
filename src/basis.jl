@@ -50,7 +50,7 @@ function _generate_Nu(bo::Integer, T=IntS)
       push!(Nu, SVector{n, T}[])
    end
    # convert into an SVector to make the length a type parameters
-   return SVector(Nu...)
+   return tuple(Nu...)
 end
 
 function generate_KL_tuples(Deg::AbstractDegree, maxbo::Integer, cg; filter=true)
@@ -147,7 +147,7 @@ struct SHIPBasis{BO, T, TJ, TDEG} <: IPBasis
    J::TJ
    SH::SHBasis{T}
    KL::Vector{NamedTuple{(:k, :l, :deg),Tuple{IntS,IntS,T}}}
-   Nu::SVector{BO, Vector{T1} where T1}
+   Nu::NTuple{BO, Vector}
    cg::ClebschGordan{T}
    firstA::Vector{IntS}   # indexing into A
 end

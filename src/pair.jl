@@ -13,8 +13,8 @@ struct PairBasis{TJ} <: IPBasis
    J::TJ
 end
 
-PairBasis(deg, trans, p, rcut) =
-   PairBasis(rbasis(deg, trans, p, rcut))
+PairBasis(deg, trans, fcut) =
+   PairBasis(TransformedJacobi(deg, trans, fcut))
 
 ==(B1::PairBasis, B2::PairBasis) = (B1.J == B2.J)
 

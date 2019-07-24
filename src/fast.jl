@@ -18,8 +18,8 @@ struct SHIP{BO, T, TJ} <: SitePotential
    KL::Vector{NamedTuple{(:k, :l, :deg),Tuple{IntS,IntS,T}}}
    firstA::Vector{IntS}      # indexing into A
    # --------------
-   IA::SVector{BO, Vector{T1} where T1}  # IA[n]::Vector{SVector{N, IntS}}
-   C::SVector{BO, Vector{T}}             # sub-coefficients
+   IA::NTuple{BO, Vector}  # IA[n]::Vector{SVector{N, IntS}}
+   C::NTuple{BO, Vector{T}}             # sub-coefficients
 end
 
 cutoff(ship::SHIP) = cutoff(ship.J)
@@ -63,7 +63,7 @@ function _SHIP(D::Dict, ::Val{BO}, T) where {BO}
       SHBasis(D["SH_maxL"], T),
       [ (k = k, l = l, deg = T(deg)) for (k, l, deg) in zip(D["K"], D["L"], D["KLD"]) ],
       Vector{IntS}(D["firstA"]),
-      SVector(IA...), SVector(C...) )
+      tuple(IA...), tuple(C...) )
 end
 
 convert(::Val{:SHIPs_SHIP}, D::Dict) = SHIP(D)
@@ -79,7 +79,7 @@ combine(basis::SHIPBasis, coeffs) = SHIP(basis, coeffs)
 
 function SHIP(basis::SHIPBasis{BO, T}, coeffs::AbstractVector{T}) where {BO, T}
    IA = _generate_Nu(BO)
-   C = SVector( [T[] for _=1:BO]... )
+   C = tuple( [T[] for _=1:BO]... )
    idx0 = 0
    for N = 1:BO
       _get_C_IA!(C[N], IA[N], basis, coeffs, Val(N), idx0)
