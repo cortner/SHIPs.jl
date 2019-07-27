@@ -28,11 +28,15 @@ end
 
 trans = PolyTransform(2, 1.0)
 cutf = PolyCutoff2s(2, 0.5, 3.0)
-ship2 = SHIPBasis(TotalDegree(15, 2.0), 2, trans, cutf)
-ship3 = SHIPBasis(TotalDegree(13, 2.0), 3, trans, cutf)
-ship4 = SHIPBasis(TotalDegree(11, 1.0), 4, trans, cutf)
-ship5 = SHIPBasis(TotalDegree(8, 1.0),  5, trans, cutf)
+ship2 = SHIPBasis(TotalDegree(2, 15, 2.0), trans, cutf)
+ship3 = SHIPBasis(TotalDegree(3, 13, 2.0), trans, cutf)
+ship4 = SHIPBasis(TotalDegree(4, 10, 1.0), trans, cutf)
+ship5 = SHIPBasis(TotalDegree(5, 8, 1.0),  trans, cutf)
 ships = [ship2, ship3, ship4, ship5]
+
+@show length.(ships)
+
+##
 
 @info("Test (de-)dictionisation of basis sets")
 for ship in ships

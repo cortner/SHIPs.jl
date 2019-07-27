@@ -1,4 +1,4 @@
-
+using StaticArrays 
 
 # -------------------------------------------------------------
 #       construct l,k tuples that specify basis functions
