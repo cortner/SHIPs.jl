@@ -22,12 +22,34 @@ tensor products `Pk * Ylm` such that `k + wY * l ≦ deg`.
 * `p` : specifies distance transform, u = (r/r0)^(-p); i.e., polynomials
 `Pk` are polynomials in `u` not in `r`. (e.g. p = 1 => Coulomb coordinates)
 """
-function SHIPDescriptor(; bodyorder=3, deg=nothing, wY=1.5, rcut=nothing, r0=2.5, p=2)
-   Deg = SparseSHIP(deg, wY)
+SHIPDescriptor(pyo::PyObject; bodyorder=3, deg=nothing, wY=1.5, rcut=nothing, r0=2.5, p=2, species=nothing) =
+   SHIPDescriptor(ASEAtoms(pyo); bodyorder=bodyorder, deg=deg, wY=wY, rcut=rcut, r0=r0, p=p, species=species)
+
+function SHIPDescriptor(aseat::ASEAtoms; bodyorder=3, deg=nothing, wY=1.5, rcut=nothing, r0=2.5, p=2, species=nothing)
+   at = Atoms(aseat)
    trans = PolyTransform(p, r0)
    fcut = PolyCutoff1s(2, rcut)
-   return SHIPBasis(Deg, bodyorder-1, trans, fcut)
+   specs = unique(collect(chemical_symbols(at)))
+   if species != nothing
+        specs = species
+   end
+   return SHIPBasis(SparseSHIP(bodyorder-1, specs, deg, wY), trans, fcut)
 end
+
+HyperXSHIPDescriptor(pyo::PyObject; bodyorder=3, deg=nothing, wY=1.5, rcut=nothing, r0=2.5, p=2, species=nothing) =
+   HyperXSHIPDescriptor(ASEAtoms(pyo); bodyorder=bodyorder, deg=deg, wY=wY, rcut=rcut, r0=r0, p=p, species=species)
+
+function HyperXSHIPDescriptor(aseat::ASEAtoms; bodyorder=3, deg=nothing, wY=1.5, rcut=nothing, r0=2.5, p=2, species=nothing)
+   at = Atoms(aseat)
+   trans = PolyTransform(p, r0)
+   fcut = PolyCutoff1s(2, rcut)
+   specs = unique(collect(chemical_symbols(at)))
+   if species != nothing
+        specs = species
+   end
+   return SHIPBasis(HyperbolicCrossSHIP(bodyorder-1, specs, deg, wY), trans, fcut)
+end
+
 
 """
 `descriptors(basis::SHIPBasis, pyo::PyObject)`
@@ -52,9 +74,9 @@ end
 
 
 # example code to test this:
-using ASE, SHIPs
-at = bulk("Si", cubic=true) * 2
-desc = SHIPsDescriptors.SHIPDescriptor(deg=6, rcut=4.0)
-B1 = SHIPsDescriptors.descriptors(desc, at)
-B2 = SHIPsDescriptors.descriptors(desc, at.po)
-B1 == B2
+# using ASE, SHIPs
+# at = bulk("Si", cubic=true) * 2
+# desc = SHIPsDescriptors.SHIPDescriptor(deg=6, rcut=4.0)
+# B1 = SHIPsDescriptors.descriptors(desc, at)
+# B2 = SHIPsDescriptors.descriptors(desc, at.po)
+# B1 == B2
