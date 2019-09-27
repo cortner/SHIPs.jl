@@ -1,5 +1,5 @@
 
-@testset "Basis Orthogonality"
+@testset "Basis Orthogonality" begin
 
 ##
 
@@ -60,7 +60,8 @@ Nsamples = 1_000_000
 G = zeros(length(P), length(P))
 for n = 1:Nsamples
    eval_basis!(B, tmp, P, SHIPs.Utils.rand_radial(P))
-   global  G += B * B'
+   # global  
+   G += B * B'
 end
 
 println(@test cond(G) < 1.1)
