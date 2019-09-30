@@ -232,12 +232,14 @@ function gram_rot_perm(maxL,N,Nsamples = 10)
    return G
 end
 
-L_even(2,3)
-gram_rot_perm(3,2,1_000_000)
+L_even(1,4)
+gram_rot_perm(4,1,1_000_000)
 generateL(Val(2),Val(3))
 sizeLM(3,2)
 
 
+@show basis(CoeffArray(), SVector(4,2))
+@show collect(_mrange(SVector(4,2)))
 
 
 
