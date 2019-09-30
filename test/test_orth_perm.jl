@@ -123,12 +123,14 @@ function generateLM(N,maxL)
    LL = generateL(Val(N),Val(maxL))
    LM = []
    for ll in LL
-      MM = collect(_mrange(ll))
-      lm = []
-      for mm in MM
-         lm = [(ll[i],mm[i]) for i in 1:N]
-         if issorted(lm)&&(sum(mm)==0)
-            push!(LM,lm)
+      if iseven(sum(ll))
+         MM = collect(_mrange(ll))
+         lm = []
+         for mm in MM
+            lm = [(ll[i],mm[i]) for i in 1:N]
+            if issorted(lm)&&(sum(mm)==0)
+               push!(LM,lm)
+            end
          end
       end
    end
@@ -150,7 +152,7 @@ function gramian(maxL,N,Nsamples = 10_000)
 end
 
 maxL = 10
-N = 1
+N = 2
 LL = generateL(Val(N),Val(maxL))
 
 
@@ -165,33 +167,77 @@ abs.(G)
 @info("Testing orthogonality of permutation-invariant
        and rotation-invariant Ylm via sampling")
 
-function scalar_prod(L1,L2,SH,Nsamples = 1_000_000)
+function scalar_prod(L1,L2,SH,Nsamples = 1_000)
     @assert length(L1) == length(L2)
     N = length(L1)
-    U1 = basis(CoeffArray(), L1)
+    U1 = basis(CoeffArray(), L1; ordered = true)
     J1 = size(U1,2)
-    U2 = basis(CoeffArray(), L2)
+    M1 = collect(_mrange(L1))
+    U2 = basis(CoeffArray(), L2; ordered = true)
     J2 = size(U2,2)
-    res = zeros(ComplexF64,J1,J2)
-    I1 = [SHIPs.SphericalHarmonics.index_y(LM1[i][1],LM1[i][2]) for i in 1:N]
-    I2 = [SHIPs.SphericalHarmonics.index_y(LM2[i][1],LM2[i][2]) for i in 1:N]
+    M2 = collect(_mrange(L2))
+    @assert length(M1)==size(U1,1)
+    @assert length(M2)==size(U2,1)
+
+    gram = zeros(ComplexF64,J1,J2)
+    I1 = [[SHIPs.SphericalHarmonics.index_y(L1[i],M1[j][i]) for i in 1:N] for j=1:length(M1)]
+    I2 = [[SHIPs.SphericalHarmonics.index_y(L2[i],M2[j][i]) for i in 1:N] for j=1:length(M2)]
+
     for n=1:Nsamples
         # generate samples
         Rs = [SHIPs.Utils.rand_sphere() for i=1:N]
         Y = [SHIPs.eval_basis(SH, Rs[i]) for i=1:N]
-        # Sum over permutations
-        BL1M1 = sum(prod(Y[σ[i]][I1[i]] for i in 1:N) for σ in permutations(1:N))
-        BL2M2 = sum(prod(Y[σ[i]][I2[i]] for i in 1:N) for σ in permutations(1:N))
-        res += BL1M1*BL2M2'
+        for j1 in 1:J1, j2 in 1:J2
+           # Sum over permutations and rotations
+           BL1M1 = sum(U1[k,j1].*sum(prod(Y[σ[i]][I1[j1][i]] for i in 1:N) for σ in permutations(1:N)) for k in 1:size(U1,1))
+           BL2M2 = sum(U2[k,j2].*sum(prod(Y[σ[i]][I2[j2][i]] for i in 1:N) for σ in permutations(1:N)) for k in 1:size(U2,1))
+           gram[j1,j2] += BL1M1*BL2M2'
+        end
     end
-    return res / Nsamples
+    return gram ./ Nsamples
 end
 
 
+function L_even(N,maxL)
+   LL = generateL(Val(N),Val(maxL))
+   LLeven = []
+   s = 0
+   S = []
+   si = []
+   for ll in LL
+      if iseven(sum(ll))
+         U = basis(CoeffArray(), ll)
+         if size(U,2)>0
+            s+=size(U,2)
+            push!(S,s)
+            push!(si,size(U,2))
+            push!(LLeven,ll)
+         end
+      end
+   end
+   return S,si,LLeven
+end
+
+function gram_rot_perm(maxL,N,Nsamples = 10)
+   SH = SHIPs.SphericalHarmonics.SHBasis(maxL)
+   LL = generateL(Val(N),Val(maxL))
+   s,si,L = L_even(N,maxL)
+   @show s
+   nb = length(L)
+   G = zeros(ComplexF64,length(s),length(s))
+   for i=1:nb, j=1:nb
+      G[s[i]:s[i]+si[i]-1,s[j]:s[j]+si[j]-1] = scalar_prod(
+                                                L[i],L[j],SH,Nsamples)
+   end
+   return G
+end
+
+L_even(2,3)
+gram_rot_perm(3,2,1_000_000)
+generateL(Val(2),Val(3))
+sizeLM(3,2)
 
 
-
-ll = SVector(1,1,1,2)
 
 
 
