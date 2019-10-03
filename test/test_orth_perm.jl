@@ -9,6 +9,8 @@ using SHIPs: TransformedJacobi, transform, transform_d, eval_basis!,
 using SHIPs.Rotations: CoeffArray, basis
 using StaticArrays
 using Combinatorics
+using Base.Threads
+
 
 ##
 @info("Testing orthogonality of permutation-invariant Ylm via sampling")
@@ -109,8 +111,10 @@ function gramian_perm(maxL,N,Nsamples = 10_000)
    nb = length(LM)
    @show nb
    G = zeros(ComplexF64,nb,nb)
-   for i=1:nb, j=1:nb
-      G[i,j] = scalar_prod_perm(LM[i],LM[j],SH,Nsamples)
+   @threads for i=1:nb
+      for j=1:nb
+         G[i,j] = scalar_prod_perm(LM[i],LM[j],SH,Nsamples)
+      end
    end
    return G
 end
@@ -120,7 +124,7 @@ end
 N = 2
 maxL = 3
 
-G = gramian_perm(maxL,N,10_000)
+@time G = gramian_perm(maxL,N,10_000)
 
 Gnorm = zeros(ComplexF64,size(G))
 for i in 1:size(G,1), j in 1:size(G,2)
@@ -187,20 +191,21 @@ function gram_rot_perm(maxL,N,Nsamples = 10)
    SH = SHIPs.SphericalHarmonics.SHBasis(maxL)
    LL = generateL(Val(N),Val(maxL))
    s,si,L = L_even(N,maxL)
-   @show s
    @show nb = length(L)
    G = zeros(ComplexF64,length(s),length(s))
-   for i=1:nb, j=1:nb
-      G[s[i]:s[i]+si[i]-1,s[j]:s[j]+si[j]-1] = scalar_prod_rot_perm(
+   @threads for i=1:nb
+      for j=1:nb
+         G[s[i]:s[i]+si[i]-1,s[j]:s[j]+si[j]-1] = scalar_prod_rot_perm(
                                                 L[i],L[j],SH,Nsamples)
+      end
    end
    return G
 end
 
 # Test part: orthogonality of permutation-rotation invariant basis functions
-N = 2
+N = 3
 maxL = 3
-G = gram_rot_perm(maxL,N,10_000)
+@time G = gram_rot_perm(maxL,N,10_000)
 
 Gnorm = zeros(ComplexF64,size(G))
 for i in 1:size(G,1), j in 1:size(G,2)
