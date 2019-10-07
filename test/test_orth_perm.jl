@@ -1,5 +1,5 @@
 
-@testset "Basis Orthogonality under permutation" begin
+# @testset "Basis Orthogonality under permutation" begin
 
 ##
 using Test
@@ -120,17 +120,17 @@ function gramian_perm(maxL,N,Nsamples = 10_000)
 end
 
 
-# Test part - orthogonality of permutation-invariant basis functions
-N = 2
-maxL = 3
-
-@time G = gramian_perm(maxL,N,10_000)
-
-Gnorm = zeros(ComplexF64,size(G))
-for i in 1:size(G,1), j in 1:size(G,2)
-   Gnorm[i,j] = G[i,j]/sqrt(G[i,i]*G[j,j])
-end
-@test cond(Gnorm)<1.2
+# # Test part - orthogonality of permutation-invariant basis functions
+# N = 4
+# maxL = 2
+#
+# @time G = gramian_perm(maxL,N,10_000)
+#
+# Gnorm = zeros(ComplexF64,size(G))
+# for i in 1:size(G,1), j in 1:size(G,2)
+#    Gnorm[i,j] = G[i,j]/sqrt(G[i,i]*G[j,j])
+# end
+# @test cond(Gnorm)<1.2
 
 
 @info("Testing orthogonality of permutation-invariant
@@ -171,31 +171,31 @@ function L_even(N,maxL)
    LL = generateL(Val(N),Val(maxL))
    LLeven = []
    s = 0
-   S = []
-   si = []
+   s1 = [1]
+   s2 = Int[]
    for ll in LL
       if iseven(sum(ll))
          U = basis(CoeffArray(), ll)
          if size(U,2)>0
             s+=size(U,2)
-            push!(S,s)
-            push!(si,size(U,2))
+            push!(s1,s+1)
+            push!(s2,s)
             push!(LLeven,ll)
          end
       end
    end
-   return S,si,LLeven
+   pop!(s1)
+   return s1,s2,LLeven
 end
 
 function gram_rot_perm(maxL,N,Nsamples = 10)
    SH = SHIPs.SphericalHarmonics.SHBasis(maxL)
-   LL = generateL(Val(N),Val(maxL))
-   s,si,L = L_even(N,maxL)
+   s1,s2,L = L_even(N,maxL)
    @show nb = length(L)
-   G = zeros(ComplexF64,length(s),length(s))
+   G = zeros(ComplexF64,maximum(s2),maximum(s2))
    @threads for i=1:nb
       for j=1:nb
-         G[s[i]:s[i]+si[i]-1,s[j]:s[j]+si[j]-1] = scalar_prod_rot_perm(
+         G[s1[i]:s2[i],s1[j]:s2[j]] = scalar_prod_rot_perm(
                                                 L[i],L[j],SH,Nsamples)
       end
    end
@@ -203,9 +203,9 @@ function gram_rot_perm(maxL,N,Nsamples = 10)
 end
 
 # Test part: orthogonality of permutation-rotation invariant basis functions
-N = 3
+N = 4
 maxL = 3
-@time G = gram_rot_perm(maxL,N,10_000)
+@time G = gram_rot_perm(maxL,N,1)
 
 Gnorm = zeros(ComplexF64,size(G))
 for i in 1:size(G,1), j in 1:size(G,2)
@@ -390,4 +390,4 @@ end
 
 
 
-end
+# end
